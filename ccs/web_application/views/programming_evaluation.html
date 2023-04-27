@@ -1,0 +1,152 @@
+{% extends "base_layout.html" %} {% block content %}
+<canvas
+	id="programming_evaluation_chart"
+	width="700"
+	style="margin: 0 auto"
+	height="400"
+></canvas>
+
+<script>
+	const ctx = document
+		.getElementById('programming_evaluation_chart')
+		.getContext('2d');
+
+	const data = {
+		labels: [],
+		datasets: []
+	};
+
+	const genders = [];
+	const chart = new Chart(ctx, {
+		type: 'bar',
+		data: data,
+		options: {
+			barValueSpacing: 20,
+			maintainAspectRatio: false,
+			plugins: {
+				legend: {
+					labels: {
+						generateLabels: (chart) => {
+							const datasets = chart.data.datasets;
+
+							return chart.legend.legendItems &&
+								chart.legend.legendItems.length > 0
+								? chart.legend.legendItems
+								: datasets.map((data, i) => {
+										const gender = data.label.split('-')[1].trim();
+										const item = {
+											datasetIndex: i,
+											hiddenText2: data.label,
+											hiddenText: gender,
+											text: gender,
+											borderRadius: undefined,
+											fillStyle: data.backgroundColor,
+											fontColor: '#666',
+											lineCap: undefined,
+											lineDash: undefined,
+											lineDashOffset: undefined,
+											lineJoin: undefined,
+											lineWidth: 0,
+											pointStyle: undefined,
+											rotation: undefined,
+											strokeStyle: 'rgba(0,0,0,0.1)',
+											textAlign: undefined
+										};
+										if (!genders.some((e) => e.search(gender) > -1)) {
+											genders.push(data.label);
+											return item;
+										} else if (genders.some((e) => e === data.label)) {
+											return item;
+										}
+										return {
+											datasetIndex: i,
+											text: gender
+										};
+								  });
+						},
+						filter: function (item, chart) {
+							const gender = item.hiddenText2;
+							if (!genders.some((e) => e.search(gender) > -1)) {
+								genders.push(item.hiddenText2);
+								return true;
+							} else if (genders.some((e) => e === item.hiddenText2)) {
+								return true;
+							}
+							return false;
+						}
+					},
+					onClick: function (e, legendItem, legend) {
+						const ci = legend.chart;
+						const gender = legendItem.hiddenText;
+
+						chart.data.datasets.forEach((data, index) => {
+							if (data.label.search(gender) > -1) {
+								if (ci.isDatasetVisible(index)) {
+									ci.hide(index);
+									legendItem.hidden = true;
+								} else {
+									ci.show(index);
+									legendItem.hidden = false;
+								}
+							}
+						});
+						ci.update();
+					}
+				}
+				// legend: {
+				// 	labels: {
+				// 		filter: function (item, chart) {
+				// 			const ignore = ['Computer Science', 'Information Technology'];
+				// 			return !ignore.some((e) => item.text.includes(e));
+				// 		}
+				// 	}
+				// }
+			},
+			x: {
+				stacked: true,
+				beginAtZero: true,
+				maxRotation: 0,
+				minRotation: 0
+			},
+			y: {
+				stacked: true
+			}
+		}
+	});
+
+	// Fetch data
+	axios({
+		method: 'POST',
+		url: '/programming_evaluation'
+	}).then(({ data }) => {
+		const { headers, programming_evaluation, enrolled_bs, genders } = data;
+		const colors = {
+			Male: '#3366CC',
+			Female: '#DC3911',
+			Bisexual: '#109519',
+			Gay: '#990099',
+			'Better not to mention': '#FF9900'
+		};
+
+		const counter = [0, 0];
+		chart.data.labels = headers;
+		chart.data.datasets = Object.entries(genders).reduce(
+			(a, [gender, options], idx) => {
+				Object.entries(options).forEach(([option, data]) => {
+					a.push({
+						label: `${option} - ${gender}`,
+						type: 'bar',
+						stack: option,
+						backgroundColor: colors[gender],
+						data
+					});
+				});
+
+				return a;
+			},
+			[]
+		);
+		chart.update();
+	});
+</script>
+{% endblock %}

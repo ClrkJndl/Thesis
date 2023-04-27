@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pandas = "==1.5.1"
+flask = "==2.2.2"
+flask-sqlalchemy = "==2.5.1"
+scikit-learn = "==1.1.2"
+gunicorn = "==20.0.4"
+flask-user = "==1.0.2.2"
+email-validator = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"

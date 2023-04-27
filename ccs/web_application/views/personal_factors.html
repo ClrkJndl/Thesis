@@ -1,0 +1,149 @@
+{% extends "base_layout.html" %} {% block content %}
+<canvas id="student_interest" style="width: 100%" height="300"></canvas>
+<br />
+<center>
+	<i style="color: #464646"
+		>Majority of the respondents chose their own interest on joining the
+		course.</i
+	>
+</center>
+<hr class="my-5" />
+<canvas id="programming_issues" style="width: 100%" height="300"></canvas>
+<br />
+<center>
+	<i style="color: #464646">Students rely more on self learning.</i>
+</center>
+
+<script>
+	let totalResponse = 0;
+	let student_interest_total = [[], []];
+	let ages = [[], []];
+
+	const ctx1 = document.getElementById('student_interest').getContext('2d');
+
+	const ctx2 = document.getElementById('programming_issues').getContext('2d');
+
+	const data = {
+		labels: [],
+		datasets: [
+			{
+				label: 'Dataset 1',
+				backgroundColor: '#3465CC'
+			}
+		]
+	};
+
+	const barOptions = (id) => ({
+		id: 'barOptions' + id,
+		afterDatasetsDraw(chart, args, pluginOptions) {
+			const idx = eval('chart' + (id + 1)).data.datasets.length - 1;
+			const dataset = eval('chart' + (id + 1)).data.datasets[idx];
+			const meta = eval('chart' + (id + 1)).getDatasetMeta(idx);
+
+			meta.data.forEach(function (bar, index) {
+				let posx;
+				posx = bar.x + bar.$context.element.width;
+				eval('ctx' + (id + 1)).textAlign = 'left';
+				eval('ctx' + (id + 1)).fillText(
+					`-- ${student_interest_total[id][index]} (${(
+						(student_interest_total[id][index] / totalResponse) *
+						100
+					).toFixed(1)}%) | Age (μ): ${ages[id][index]}`,
+					posx,
+					bar.y + 3
+				);
+			});
+		}
+	});
+
+	const generateOptions = (title, idx) => ({
+		options: {
+			indexAxis: 'y',
+			plugins: {
+				legend: {
+					position: 'right'
+				},
+				title: {
+					display: true,
+					text: title
+				}
+			},
+			scales: {
+				x: {
+					stacked: true
+				},
+				y: {
+					stacked: true
+				}
+			}
+		},
+		plugins: [barOptions(idx)]
+	});
+
+	const chart1 = new Chart(ctx1, {
+		type: 'bar',
+		data: { ...data },
+		...generateOptions('Student Interest/Motivation in joining the Course', 0)
+	});
+
+	const chart2 = new Chart(ctx2, {
+		type: 'bar',
+		data: { ...data },
+		...generateOptions('Resolving Programming Issues', 1)
+	});
+
+	// Fetch data
+	axios({
+		method: 'POST',
+		url: '/personal_factors'
+	}).then(({ data }) => {
+		const {
+			headers,
+			genders,
+			responses,
+			student_interest_total: _total,
+			ages: _ages
+		} = data;
+		totalResponse = responses;
+		student_interest_total = _total;
+		ages = _ages;
+		const colors = ['#3366CC', '#DC3911', '#FF9800', '#109519', '#990099'];
+
+		// Chart 1 (Student interest)
+		chart1.data.labels = headers[0];
+		chart1.data.datasets = Object.entries(genders[0])
+			.sort(
+				(a, b) =>
+					b[1].reduce((x, y) => (x += y), 0) -
+					a[1].reduce((x, y) => (x += y), 0)
+			)
+			.map(([gender, value], idx) => ({
+				label: gender,
+				data: value,
+				backgroundColor: colors[idx]
+			}));
+
+		chart1.update();
+
+		// Chart 2 (Programming issues)
+		chart2.data.labels = headers[1].map((e, idx) =>
+			idx === 0
+				? e.split('(').map((s, i) => (i === 1 ? '(' + s : s))
+				: e.split(',')
+		);
+		chart2.data.datasets = Object.entries(genders[1])
+			.sort(
+				(a, b) =>
+					b[1].reduce((x, y) => (x += y), 0) -
+					a[1].reduce((x, y) => (x += y), 0)
+			)
+			.map(([gender, value], idx) => ({
+				label: gender,
+				data: value,
+				backgroundColor: colors[idx]
+			}));
+
+		chart2.update();
+	});
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% extends "base_layout.html" %} {% block content %}
+<style>
+	.in {
+		width: 40px;
+		padding: 2px 4px;
+		font-size: 12px;
+	}
+	#search-txt {
+		font-size: 12px;
+	}
+</style>
+<div>
+	<span id="after-here"></span>
+</div>
+
+<hr class="my-4" />
+
+<center><h4>Grades Datatable</h4></center>
+<input
+	id="search-txt"
+	type="text"
+	class="form-control"
+	placeholder="Search Student ID"
+/>
+<table class="table table-bordered table-striped mt-4" style="font-size: 11px">
+	<thead>
+		<tr>
+			<th scope="col">No.</th>
+			<th scope="col" id="student_id">Student ID</th>
+		</tr>
+	</thead>
+	<tbody id="table-body"></tbody>
+</table>
+
+<script>
+	let students = {};
+
+	// Populate table
+	function populateTable(_students) {
+		$('.rm-tr').remove();
+		const _s = _students.keys.slice(1, 5);
+		const subjects = _students.keys.filter((s) => !_s.includes(s));
+		for (const [idx, _row] of Object.entries(_students.rows)) {
+			const _r = _row.slice(1, 5);
+			const row = _row.filter((s) => !_r.includes(s));
+
+			const id = row[0].replace(/ /g, '');
+			if (!$(`#${id}`).length) {
+				$('#table-body').append(
+					`<tr id="${id}" class="rm-tr"><td>${parseInt(idx) + 1}</td></tr>`
+				);
+				for (const [idx, grade] of Object.entries(row)) {
+					const val = grade ?? '';
+					$(`#${id}`).append(
+						parseInt(idx) > 0
+							? `<td><input class="in form-control" value="${val}" onChange="updateGrade(this, '${id}', '${subjects[idx]}')"/></td>`
+							: `<td>${val}</td>`
+					);
+				}
+			}
+		}
+	}
+
+	function updateGrade(event, id, subject) {
+		axios({
+			method: 'POST',
+			data: { id, subject, grade: event.value },
+			url: '/update_grade'
+		})
+			.then(() => {
+				const index = students.keys.indexOf(subject);
+				students = {
+					keys: students.keys,
+					rows: students.rows.map((s) =>
+						id == s[0].replace(/ /g, '')
+							? s.map((e, i) => (i == index ? event.value : e))
+							: s
+					)
+				};
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}
+
+	// Fetch data
+	axios({
+		method: 'POST',
+		url: '/gender_analysis'
+	}).then(({ data: _data }) => {
+		const colors = {
+			Male: '#3366CC',
+			Female: '#DC3911',
+			Bisexual: '#109519',
+			Gay: '#990099',
+			'Better not to mention': '#FF9900'
+		};
+
+		students = _data.students;
+		const subjects = [...students.keys];
+		subjects.splice(0, 5);
+		const data = {};
+		for (const rows of students.rows) {
+			const row = [...rows];
+			const gender = row[1];
+			row.splice(0, 5);
+
+			for (const [idx, _val] of Object.entries(row)) {
+				const val = (_val ?? '').replace(/\"/g, '').trim();
+				const property = subjects[parseInt(idx)];
+				const props = data[property] ?? {};
+				const props_gender = props[val] ?? {};
+				data[property] = {
+					...props,
+					[val]: {
+						...props_gender,
+						[gender]: props_gender[gender] ? props_gender[gender] + 1 : 1
+					}
+				};
+			}
+		}
+
+		const header = {
+			c: 'C++',
+			java: 'Java',
+			information_management: 'Information Management',
+			oop: 'Object Oriented Programming',
+			python: 'Python',
+			mysql: 'MYSQL',
+			web_development: 'Web Development'
+		};
+
+		for (const subject of subjects.reverse()) {
+			// Add table header from subjects
+			$('#student_id').after(`<th>${header[subject]}</th>`);
+
+			const chart_id = subject.toLowerCase().replace(/ /g, '-') + '-chart';
+			$('#after-here').after(
+				`<canvas id="${chart_id}" style="width: 100%;max-width: 550px; margin: 0 auto;" height="300"></canvas>`
+			);
+
+			const ctx = document.getElementById(chart_id).getContext('2d');
+			const labels = Object.keys(data[subject]).sort(
+				(a, b) => parseFloat(a) - parseFloat(b)
+			);
+
+			const _d = {
+				labels,
+				datasets: Object.entries(data[subject])
+					.reduce((a, [grade, val], idx) => {
+						Object.entries(val).forEach(([gender, _v]) => {
+							const index = labels.findIndex((label) => label == grade);
+							const foundIndex = a.findIndex((e) => e.label == gender);
+							if (foundIndex === -1) {
+								a = [
+									...a,
+									{
+										label: gender,
+										backgroundColor: colors[gender],
+										data: new Array(labels.length)
+											.fill(0)
+											.map((e, i) => (i === index ? _v : e))
+									}
+								];
+							} else {
+								a[foundIndex] = {
+									...a[foundIndex],
+									data: a[foundIndex].data.map((_d, i) =>
+										i === index ? _v : _d
+									)
+								};
+							}
+						});
+
+						return a;
+					}, [])
+					.sort((a, b) => b.label.localeCompare(a.label))
+			};
+
+			const chart = new Chart(ctx, {
+				type: 'bar',
+				data: { ..._d },
+				options: {
+					responsive: false,
+					plugins: {
+						title: {
+							display: true,
+							text: header[subject]
+						}
+					}
+				}
+			});
+		}
+
+		populateTable(students);
+	});
+
+	$('#search-txt').on('keyup', (event) => {
+		const { value } = event.target;
+		populateTable({
+			keys: students.keys,
+			rows: students.rows.filter((student) =>
+				student[0].startsWith(value) ? student : false
+			)
+		});
+	});
+</script>
+{% endblock %}

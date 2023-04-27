@@ -1,0 +1,115 @@
+{% extends "base_layout.html" %} {% block content %}
+<canvas
+	id="environmental_factors_chart"
+	style="width: 100%"
+	height="300"
+></canvas>
+<br />
+<center>
+	<i style="color: #464646"
+		>Students are having a difficulty on their learning due to the internet
+		connection.</i
+	>
+</center>
+<script>
+	let totalResponse = 0;
+	let learning_experience_total = [];
+	let ages = [];
+
+	const ctx = document
+		.getElementById('environmental_factors_chart')
+		.getContext('2d');
+
+	const data = {
+		labels: [],
+		datasets: [
+			{
+				label: 'Dataset 1',
+				backgroundColor: '#3465CC'
+			}
+		]
+	};
+
+	const barOptions = {
+		id: 'barOptions',
+		afterDatasetsDraw(chart, args, pluginOptions) {
+			const idx = chart.data.datasets.length - 1;
+			const dataset = chart.data.datasets[idx];
+			const meta = chart.getDatasetMeta(idx);
+
+			meta.data.forEach(function (bar, index) {
+				let posx;
+				posx = bar.x + bar.$context.element.width;
+				ctx.textAlign = 'left';
+				ctx.fillText(
+					`-- ${learning_experience_total[index]} (${(
+						(learning_experience_total[index] / totalResponse) *
+						100
+					).toFixed(1)}%) | Age (μ): ${ages[index]}`,
+					posx,
+					bar.y + 3
+				);
+			});
+		}
+	};
+
+	const chart = new Chart(ctx, {
+		type: 'bar',
+		data: { ...data },
+		options: {
+			indexAxis: 'y',
+			plugins: {
+				legend: {
+					position: 'right'
+				},
+				title: {
+					display: true,
+					text: 'Factors that may affect the learning experiences'
+				}
+			},
+			scales: {
+				x: {
+					stacked: true
+				},
+				y: {
+					stacked: true
+				}
+			}
+		},
+		plugins: [barOptions]
+	});
+
+	// Fetch data
+	axios({
+		method: 'POST',
+		url: '/environmental_factors'
+	}).then(({ data }) => {
+		const {
+			headers,
+			genders,
+			responses,
+			learning_experience_total: _total,
+			ages: _ages
+		} = data;
+		totalResponse = responses;
+		learning_experience_total = _total;
+		ages = _ages;
+		const colors = ['#3366CC', '#DC3911', '#FF9800', '#109519', '#990099'];
+
+		chart.data.labels = headers;
+		chart.data.datasets = Object.entries(genders)
+			.sort(
+				(a, b) =>
+					b[1].reduce((x, y) => (x += y), 0) -
+					a[1].reduce((x, y) => (x += y), 0)
+			)
+			.map(([gender, value], idx) => ({
+				label: gender,
+				data: value,
+				backgroundColor: colors[idx]
+			}));
+
+		chart.update();
+	});
+</script>
+{% endblock %}

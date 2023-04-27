@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link
+			rel="shortcut icon"
+			type="image/png"
+			href="{{ url_for('static', filename='img/ccs_logo.png') }}"
+		/>
+		<link
+			rel="stylesheet"
+			href="{{ url_for('static', filename='css/spinner.css') }}"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"
+		/>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+			crossorigin="anonymous"
+		/>
+		<script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+		<script src="https://unpkg.com/filepond@4.17.1/dist/filepond.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			media="screen"
+			href="https://unpkg.com/filepond@4.17.1/dist/filepond.css"
+		/>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			media="screen"
+			href="https://unpkg.com/filepond-plugin-image-preview@4.6.4/dist/filepond-plugin-image-preview.min.css"
+		/>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js"
+			integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+			crossorigin="anonymous"
+		></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+			crossorigin="anonymous"
+		></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.3/moment-with-locales.min.js" integrity="sha512-vFABRuf5oGUaztndx4KoAEUVQnOvAIFs59y4tO0DILGWhQiFnFHiR+ZJfxLDyJlXgeut9Z07Svuvm+1Jv89w5g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+		<style>
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+        overflow: hidden;
+			}
+
+			body {
+				display: flex;
+			}
+
+			#loader {
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 99999;
+				overflow: hidden;
+				position: absolute;
+				background-color: #0a3b0d;
+			}
+
+			.sidebar {
+				width: 300px;
+				height: 100%;
+			}
+
+			.main {
+				flex-grow: 1;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.top-nav {
+				min-height: 65px;
+				background-color: #0a3b0d;
+			}
+
+			.main {
+				flex-grow: 1;
+			}
+
+			.nav-active {
+				color: #0d6efd !important;
+			}
+
+			.content {
+				overflow: auto;
+			}
+
+			.navlink {
+				border-radius: 4px;
+				transition: all 200ms;
+			}
+
+			.navlink:hover {
+				background-color: #e4e4e4 !important;
+			}
+
+			.hoverable {
+				cursor: pointer;
+			}
+		</style>
+		<title>CCS Learning Difference</title>
+	</head>
+	<body>
+		<div id="loader">
+			<div class="lds-roller">
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+				<div></div>
+			</div>
+			<span class="text-white mt-3">Loading. . .</span>
+		</div>
+
+		<!-- Title -->
+		<div class="sidebar p-1 shadow">
+			<nav class="navbar pt-0 pb-0 mb-5">
+				<div class="container-fluid">
+					<a class="navbar-brand d-flex align-items-center w-100" href="#">
+						<img
+							src="{{ url_for('static', filename='img/ccs_logo.png') }}"
+							alt="Logo"
+							width="55"
+							height="55"
+							class="me-2 d-inline-block align-text-top"
+						/>
+						<span style="font-size: 18px;">Gender Analysis Web App</span>
+					</a>
+				</div>
+			</nav>
+
+			<!-- Nav -->
+			<nav class="navbar pt-0 pb-0 mb-3">
+				<div class="container-fluid mx-2 navlink">
+					<a
+						id="nav-dashboard"
+						style="font-size: 14px"
+						class="navbar-brand d-flex align-items-center w-100"
+						href="/"
+					>
+						<i class="bi bi-grid me-3"></i>
+						<span>Dashboard</span>
+					</a>
+				</div>
+			</nav>
+			<nav class="navbar pt-0 pb-0 mb-3">
+				<div class="container-fluid mx-2 navlink">
+					<a
+						id="nav-about"
+						style="font-size: 14px"
+						class="navbar-brand d-flex align-items-center w-100"
+						href="/about"
+					>
+						<i class="bi bi-info-circle me-3"></i>
+						<span>About</span>
+					</a>
+				</div>
+			</nav>
+			<nav class="navbar pt-0 pb-0 mb-3">
+				<div class="accordion container-fluid mx-2 navlink w-100" id="factorAccordion">
+					<div class="accordion-item border-0 bg-transparent w-100 hoverable">
+							<a
+								id="nav-factors"
+								style="font-size: 14px"
+								class="navbar-brand d-flex align-items-center"
+								data-bs-toggle="collapse"
+								data-bs-target="#factors-accordion"
+								aria-controls="factors-accordion"
+							>
+								<i class="bi bi-person me-3"></i> <span>Factors</span>
+								<div
+									id="factors-accordion"
+									class="accordion-collapse collapse"
+									aria-labelledby="headingOne"
+									data-bs-parent="#factorAccordion"
+								>
+									<div>
+										<nav class="navbar pt-0 pb-0 mb-3">
+											<div class="container-fluid mx-2 navlink" style="margin-top: -20px;">
+												<a
+													id="nav-personal-factors"
+													style="font-size: 14px"
+													class="navbar-brand d-flex align-items-center w-100"
+													href="/personal_factors"
+												>
+													<i class="bi bi-arrow-return-right me-3"></i>
+													<span>Personal Factors</span>
+												</a>
+											</div>
+										</nav>
+										<nav class="navbar pt-0 pb-0 mb-3">
+											<div class="container-fluid mx-2 navlink">
+												<a
+													id="nav-environmental-factors"
+													style="font-size: 14px"
+													class="navbar-brand d-flex align-items-center w-100"
+													href="/environmental_factors"
+												>
+													<i class="bi bi-arrow-return-right me-3"></i>
+													<span>Environmental Factors</span>
+												</a>
+											</div>
+										</nav>
+										<nav class="navbar pt-0 pb-0 mb-3">
+											<div class="container-fluid mx-2 navlink">
+												<a
+													id="nav-academic-aid"
+													style="font-size: 14px"
+													class="navbar-brand d-flex align-items-center w-100"
+													href="/academic_aid"
+												>
+													<i class="bi bi-arrow-return-right me-3"></i>
+													<span>Academic Aid</span>
+												</a>
+											</div>
+										</nav>
+								</div>
+							</a>
+						</div>
+					</div>
+				</div>
+			</nav>
+			<nav class="navbar pt-0 pb-0 mb-3">
+				<div class="container-fluid mx-2 navlink">
+					<a
+						id="nav-clustered-data"
+						style="font-size: 14px"
+						class="navbar-brand d-flex align-items-center w-100"
+						href="/clustered_data"
+					>
+						<i class="bi bi-pie-chart me-3"></i>
+						<span>Clustered Data</span>
+					</a>
+				</div>
+			</nav>
+			
+			<nav class="navbar pt-0 pb-0 mb-3">
+				<div class="container-fluid mx-2 navlink">
+					<a
+						id="nav-programming-evaluation"
+						style="font-size: 14px"
+						class="navbar-brand d-flex align-items-center w-100"
+						href="/programming_evaluation"
+					>
+						<i class="bi bi-bar-chart-line me-3"></i>
+						<span>Programming Evaluation</span>
+					</a>
+				</div>
+			</nav>
+
+      <nav class="navbar pt-0 pb-0 mb-3">
+				<div class="container-fluid mx-2 navlink">
+					<a
+						id="nav-grade-analysis"
+						style="font-size: 14px"
+						class="navbar-brand d-flex align-items-center w-100"
+						href="/grade_analysis"
+					>
+						<i class="bi bi-people me-3"></i>
+						<span>Grade Analysis</span>
+					</a>
+				</div>
+			</nav>
+
+      <i id="recent-data-text" style="position: absolute; bottom: 20px; left: 24px; font-size: 10px; color: gray;"><b>Recent Uploaded Data</b> <br /> <span id="date-here"></span><br /> <span id="filename-here"></span></i>
+		</div>
+		<div class="main">
+			<div class="top-nav position-relative">
+        <div class="d-flex justify-content-end mt-lg-3 me-4">
+          {% if
+            call_or_get(current_user.is_authenticated) %}
+            <span class="text-white">{{ current_user.first_name }} {{ current_user.last_name}}</span>
+            &nbsp; | &nbsp;
+            <a href="{{ url_for('user.logout') }}" class="text-danger text-decoration-none" 
+              >{%trans%}Logout{%endtrans%}</a
+            >
+            {% endif %}
+        </div>
+      </div>
+			<div class="content py-3 px-4">
+				<h3 id="content-title" class="mb-4"></h3>
+				<div class="content-body">{% block content %}{% endblock %}</div>
+			</div>
+		</div>
+
+		<script>
+			$(document).ready(() => {
+				// If all components are ready, remove loader
+				$('#loader').remove();
+
+				const path = window.location.pathname;
+        const factors = ['factors', 'programming_issues', 'environmental_factors','academic_aid']
+
+				// Set active link
+				if (path === '/') {
+					setContentTitle('Dashboard');
+					setActiveLink('nav-dashboard');
+				} else if (path === '/about') {
+					setContentTitle('About');
+					setActiveLink('nav-about');
+				} else if (factors.some(e => path.includes(e))) {
+          $('#factors-accordion').addClass('show');
+					$('#factorAccordion').removeClass('navlink');
+          setActiveLink(`nav-${path.replace(/\//, '').replace(/\_/, '-')}`);
+          
+          if (path === '/personal_factors') {
+            setContentTitle('Personal Factors');
+          } else if (path === '/environmental_factors') {
+            setContentTitle('Environmental Factors');
+          } else if (path === '/academic_aid') {
+            setContentTitle('Academic Aid');
+          }
+				} else if (path === '/clustered_data') {
+					setContentTitle('Clustered Data');
+					setActiveLink('nav-clustered-data');
+				} else if (path === '/grade_analysis') {
+					setContentTitle('Grade Analysis');
+					setActiveLink('nav-grade-analysis');
+				} else if (path === '/programming_evaluation') {
+					setContentTitle('Programming Evaluation');
+					setActiveLink('nav-programming-evaluation');
+				}
+
+				function setActiveLink(id) {
+					$('#' + id).addClass('nav-active');
+				}
+
+				function setContentTitle(title) {
+					$('#content-title').html(title);
+				}
+
+        axios({
+          method: 'GET',
+          url: '/get_recent_uploaded_data',
+        }).then(({data}) => {
+          if (data.length) {
+            $('#filename-here').append("(" + data[0] + ")")
+            $('#date-here').append(moment(data[1]).format('LLL'))
+          }
+        })
+			});
+		</script>
+	</body>
+</html>

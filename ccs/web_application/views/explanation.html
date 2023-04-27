@@ -1,0 +1,429 @@
+{% extends "base_layout.html" %} {% block content %}
+<style>
+	#file_upload {
+		width: 100%;
+		max-width: 550px;
+		margin: 0 auto;
+	}
+	.tooltipDesign {
+		background: rgba(0, 0, 0, 0.7);
+		border-radius: 4px;
+		color: white;
+		opacity: 1;
+		pointer-events: none;
+		position: absolute;
+		transition: all 0.3s ease;
+		padding: 5px;
+		z-index: 9999;
+	}
+	.tooltipul {
+		margin: 6px;
+		padding: 0;
+		list-style: none;
+		text-align: left;
+		font-size: 12px;
+	}
+	.colorSquare {
+		padding-top: 2px;
+		min-width: 15px;
+		min-height: 15px;
+		display: inline-block;
+		border-radius: 4px;
+	}
+</style>
+
+<div id="myModal" class="modal" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Warning!</h5>
+				<button
+					type="button"
+					class="close"
+					data-dismiss="modal"
+					aria-label="Close"
+					onCLick="closeModal();"
+				>
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<p>
+					Do you want to overwrite existing data? <br />This will also clear
+					changes made in Grade Analysis page.
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button
+					type="button"
+					class="btn btn-primary"
+					data-dismiss="modal"
+					onClick="closeModal(); addFile();"
+				>
+					Proceed
+				</button>
+				<button
+					type="button"
+					class="btn btn-secondary"
+					data-dismiss="modal"
+					onClick="closeModal();"
+				>
+					Close
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<input
+	type="file"
+	name="file"
+	class="filepond"
+	id="file_upload"
+	name="filepond"
+/>
+<canvas
+	id="scatterPlot"
+	style="width: 100%; max-width: 650px; margin: 2rem auto"
+	height="500"
+></canvas>
+<canvas
+	id="scatterPlot1"
+	style="width: 100%; max-width: 650px; margin: 2rem auto"
+	height="500"
+></canvas>
+
+<!-- Plot Result from Dataset -->
+<script>
+	const ctx = document.getElementById('scatterPlot').getContext('2d');
+	const ctx1 = document.getElementById('scatterPlot1').getContext('2d');
+	let tooltipUL;
+
+	const getOrCreateTooltip = (chart) => {
+		// Tooltip Element
+		let tooltipEL = chart.canvas.parentNode.querySelector('#container');
+
+		// Create element on first render
+		if (!tooltipEL) {
+			tooltipEL = document.createElement('div');
+			tooltipEL.setAttribute('id', 'container');
+			tooltipEL.classList.add('tooltipDesign');
+			tooltipUL = document.createElement('ul');
+			tooltipEL.classList.add('tooltipul');
+
+			tooltipEL.appendChild(tooltipUL);
+			chart.canvas.parentNode.appendChild(tooltipEL);
+		}
+
+		return [tooltipEL, tooltipUL];
+	};
+
+	const externalTooltipHandler = (context) => {
+		const { chart, tooltip } = context;
+		const [tooltipEL, tooltipUL] = getOrCreateTooltip(chart);
+
+		if (tooltip.opacity === 0) {
+			tooltipEL.style.opacity = 0;
+			return;
+		}
+
+		if (tooltip.body) {
+			const titleLines = tooltip.title || [];
+			const bodyLines = tooltip.body.map((b) => b.lines);
+			const tooltipLI = document.createElement('li');
+			tooltipUL.style.listStyle = 'none';
+
+			titleLines.forEach((title) => {
+				tooltipUL.appendChild(tooltipLI);
+				const tooltipSPAN = document.createElement('span');
+				tooltipLI.appendChild(tooltipSPAN);
+				// create a text node with the title
+				const tooltipTitle = document.createTextNode(title);
+				tooltipSPAN.appendChild(tooltipTitle);
+			});
+
+			const tooltipBodyP = document.createElement('div');
+			tooltipBodyP.style.display = 'flex';
+			tooltipBodyP.style.flexDirection = 'column';
+			tooltipBodyP.style.gap = '4px';
+			bodyLines.forEach((body, i) => {
+				const innerDiv = document.createElement('div');
+				innerDiv.style.display = 'flex';
+				innerDiv.style.alignItems = 'flex-start';
+				innerDiv.style.gap = '4px';
+
+				const colors = tooltip.labelColors[i];
+				const colorSquare = document.createElement('div');
+				colorSquare.classList.add('colorSquare');
+				colorSquare.style.background = colors.backgroundColor;
+				colorSquare.style.border = colors.borderColor;
+
+				const textLabel = document.createElement('div');
+
+				Object.entries(body[0]).forEach(([key, val]) => {
+					const br = document.createElement('br');
+					const bold = document.createElement('b');
+					const keyText = document.createTextNode(key + ': ');
+					bold.appendChild(keyText);
+
+					const textNode = document.createTextNode(val);
+					textLabel.appendChild(bold);
+					textLabel.appendChild(textNode);
+					textLabel.appendChild(br);
+				});
+
+				innerDiv.appendChild(colorSquare);
+				innerDiv.appendChild(textLabel);
+				tooltipBodyP.appendChild(innerDiv);
+			});
+
+			const ULnode = tooltipEL.querySelector('ul');
+			// remove old children
+			while (ULnode.firstChild) {
+				ULnode.firstChild.remove();
+			}
+			// add new children
+			ULnode.appendChild(tooltipLI);
+			tooltipLI.appendChild(tooltipBodyP);
+			tooltipEL.style.opacity = 1;
+
+			// positioning of the tooltip.
+			const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+			tooltipEL.style.left = positionX + tooltip.caret + 'px';
+			tooltipEL.style.top = (positionY + tooltip.caretY) / 2 + 'px';
+			tooltipEL.style.font = tooltip.options.bodyFont.string;
+			tooltipEL.style.padding =
+				tooltip.options.padding + 'px' + tooltip.options.padding + 'px';
+		}
+	};
+
+  const data1 = {
+			datasets: [
+				{
+					label: 'Centroids',
+					data: [],
+					backgroundColor: '#4834d4',
+					pointRadius: 5,
+					zIndex: 999
+				},
+				{
+					label: 'Cluster 1',
+					data: [],
+					backgroundColor: '#f9ca24',
+					tension: 0.4
+				},
+				{
+					label: 'Cluster 2',
+					data: [],
+					backgroundColor: '#6ab04c',
+					tension: 0.4
+				},
+				{
+					label: 'Cluster 3',
+					data: [],
+					backgroundColor: '#eb4d4b',
+					tension: 0.4
+				},
+				{
+					label: 'Cluster 4',
+					data: [],
+					backgroundColor: '#f0932b',
+					tension: 0.4
+				}
+			]
+		}
+
+	const chart = new Chart(ctx, {
+		type: 'scatter',
+		data: data1,
+		options: {
+			plugins: {
+				tooltip: {
+					callbacks: {
+						label: function (context) {
+							const data =
+								_data.clusters[context.datasetIndex - 1].data[
+									context.dataIndex
+								];
+
+							return data;
+						}
+					},
+					enabled: false,
+					external: externalTooltipHandler
+				}
+			},
+			scales: {
+				x: {
+					type: 'linear',
+					position: 'bottom',
+					title: {
+						display: true,
+						text: 'Age'
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Ease of Learning'
+					}
+				}
+			}
+		}
+	});
+
+  const chart1 = new Chart(ctx1, {
+    type: 'scatter', 
+    data: data1,
+    options: {
+			scales: {
+				x: {
+					type: 'linear',
+					position: 'bottom',
+					title: {
+						display: true,
+						text: 'Age'
+					}
+				},
+				y: {
+					title: {
+						display: true,
+						text: 'Ease of Learning'
+					}
+				}
+			}
+		}
+  })
+
+	function updateData(index, data) {
+		chart.data.datasets = chart.data.datasets.map((dataset, idx) =>
+			idx === index ? { ...dataset, data } : dataset
+		);
+		chart.update();
+		chart1.data.datasets = chart1.data.datasets.map((dataset, idx) =>
+			idx === index ? { ...dataset, data } : dataset
+		);
+		chart1.update();
+	}
+
+	function updateClusteredDataChart() {
+		_data.clusters.forEach((el, idx) => {
+			const res = mapData(el);
+
+			updateData(idx + 1, res);
+		});
+
+		// Plot centroid
+		const res = mapData(_data.centroid);
+		updateData(0, res);
+	}
+
+	function populateData(data) {
+		const colors = {
+			Male: '#3366CC',
+			Female: '#DC3911',
+			Bisexual: '#109519',
+			Gay: '#990099',
+			'Better not to mention': '#FF9900'
+		};
+		const labels = [
+			'C++',
+			'Information Management',
+			'Java',
+			'MySQL',
+			'Object Oriented Programming',
+			'Python',
+			'Web Development'
+		];
+		_data = data;
+	}
+</script>
+
+<!-- File Pond Function -->
+<script>
+	// Register validate plugin
+	FilePond.registerPlugin(FilePondPluginFileValidateType);
+	FilePond.parse(document.body);
+	const inputElement = document.querySelector('#file_upload');
+	let _data = [];
+	let file = '';
+	let toAdd = false;
+
+	const pond = FilePond.create(inputElement, {
+		beforeAddFile: (_file) => {
+			file = _file.file;
+			if (toAdd) {
+				return true;
+			} else {
+				$('#myModal').modal('show');
+				return false;
+			}
+		},
+		server: {
+			process: {
+				url: './predict',
+				method: 'POST',
+				onload: (response) => {
+					const { data } = JSON.parse(response);
+					$('.gen-chart').remove();
+					populateData(data);
+					toAdd = false;
+				}
+			}
+		},
+		acceptedFileTypes: ['application/csv', 'text/csv', '.csv'],
+		labelFileTypeNotAllowed: 'Invalid file type, only CSV files are allowed.',
+		labelIdle:
+			'Drag & Drop your dataset file or <span class="filepond--label-action"> Browse </span>'
+	});
+
+	// Plot chart after upload is complete
+	$('#file_upload').on('FilePond:processfile', function (e) {
+		// Plot clusters
+		updateClusteredDataChart();
+		axios({
+			method: 'GET',
+			url: '/get_recent_uploaded_data'
+		}).then(({ data }) => {
+			if (data.length) {
+				$('#filename-here').html('(' + data[0] + ')');
+				$('#date-here').html(moment(data[1]).format('LLL'));
+			}
+		});
+	});
+
+	function mapData({ x, y }) {
+		const res = [];
+
+		for (let i = 0; i < x.length; i++) {
+			res.push({ x: x[i], y: y[i] });
+		}
+
+		return res;
+	}
+
+	function addFile() {
+		toAdd = true;
+		pond.addFile(file);
+	}
+
+	function closeModal() {
+		$('#myModal').modal('hide');
+	}
+</script>
+
+<script>
+	// Get data onload
+	$(document).ready(() => {
+		axios({
+			method: 'GET',
+			url: '/load'
+		})
+			.then(({ data: { data } }) => {
+				populateData(data);
+				updateClusteredDataChart();
+			})
+			.catch(() => (toAdd = true));
+	});
+</script>
+{% endblock %}

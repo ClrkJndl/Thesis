@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>CCS | Login</title>
+		<link
+			rel="shortcut icon"
+			type="image/png"
+			href="{{ url_for('static', filename='img/ccs_logo.png') }}"
+		/>
+		<!-- Font Awesome -->
+		<link
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+			rel="stylesheet"
+		/>
+		<!-- Google Fonts -->
+		<link
+			href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+			rel="stylesheet"
+		/>
+		<!-- MDB -->
+		<link
+			href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.1/mdb.min.css"
+			rel="stylesheet"
+		/>
+		<script
+			type="text/javascript"
+			src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.0.1/mdb.min.js"
+		></script>
+		<script
+			src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js"
+			integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+			crossorigin="anonymous"
+		></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+		<style>
+			.bg-image-vertical {
+				position: relative;
+				overflow: hidden;
+				background-repeat: no-repeat;
+				background-position: right center;
+				background-size: auto 100%;
+			}
+
+			@media (min-width: 1025px) {
+				.h-custom-2 {
+					height: 100%;
+				}
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+	<body>
+		{% from "flask_user/_macros.html" import render_field,
+		render_checkbox_field, render_submit_field %}
+		<section class="h-100">
+			<div class="container-fluid h-100">
+				<div
+					class="row h-100 d-flex justify-content-center flex-column align-items-center"
+				>
+					<div
+						class="position-absolute bg-white"
+						style="
+							width: 100%;
+							max-width: 650px;
+							min-width: 400px;
+							margin: 0 auto;
+							border-radius: 6px;
+						"
+					>
+						<div
+							class="px-5 ms-xl-4"
+							style="
+								display: flex;
+								flex-direction: column;
+								column-gap: 12px;
+								align-items: center;
+								margin-top: 3rem;
+							"
+						>
+							<img
+								src="{{ url_for('static', filename='img/ccs_logo.png') }}"
+								height="120"
+								width="120"
+								alt="CCS Logo"
+							/>
+							<span class="h5 mt-3" style="text-align: center"
+								>College of Computing Studies</span
+							>
+						</div>
+
+						<div
+							class="d-flex align-items-center px-5 ms-xl-4 pt-5 pt-xl-0"
+							style="margin-top: 4rem"
+						>
+							<form
+								style="
+									width: 23rem;
+									display: flex;
+									flex-direction: column;
+									justify-content: center;
+									margin: 0 auto 2rem auto;
+								"
+								method="POST"
+								class="form"
+								role="form"
+								autocomplete="off"
+							>
+								{{ form.hidden_tag() }}
+
+								<h3
+									class="fw-normal mb-3 pb-3"
+									style="letter-spacing: 1px; text-align: center"
+								>
+									Log in
+								</h3>
+								<div class="form-outline mb-4">
+									<input
+										type="username"
+										name="username"
+										id="username"
+										class="form-control form-control-lg"
+										role="presentation"
+										autocomplete="off"
+										required
+									/>
+									<label class="form-label" for="form2Example18"
+										>Username</label
+									>
+								</div>
+
+								<div class="form-outline mb-4">
+									{% set field = form.password %}
+									<input
+										type="password"
+										id="password"
+										name="password"
+										class="form-control form-control-lg"
+										autocomplete="new-password"
+										required
+									/>
+									<label class="form-label" for="form2Example28"
+										>Password</label
+									>
+								</div>
+								{% if form.errors %} {% for e in field.errors %}
+								<div
+									class="alert-danger text-center my-4"
+									style="padding: 12px 0; border-radius: 4px"
+								>
+									{{ e }}
+								</div>
+								{% endfor %} {% endif %}
+
+								<div class="pt-1 mb-4">
+									<button
+										class="btn btn-info btn-lg btn-block"
+										type="submit"
+										id="submit-login"
+										style="background-color: #0c390a"
+									>
+										Login
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+					<div
+						class="col-sm-12 px-0 d-none d-sm-block"
+						style="background-color: #0c390a; height: 100%"
+					></div>
+				</div>
+			</div>
+		</section>
+		<script>
+			$(document).ready(() => {
+				$('#submit-login').on('click', () => {
+					const data = {
+						username: $('#username').val(),
+						password: $('#password').val()
+					};
+					axios({
+						method: 'POST',
+						url: '/login',
+						data
+					})
+						.then(({ data }) => {
+							console.log(data);
+						})
+						.catch(() => (toAdd = true));
+				});
+			});
+		</script>
+	</body>
+</html>

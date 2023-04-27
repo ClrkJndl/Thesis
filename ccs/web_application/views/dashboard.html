@@ -1,0 +1,213 @@
+{% extends "base_layout.html" %} {% block content %}
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.1.0/chartjs-plugin-datalabels.min.js"
+	integrity="sha512-Tfw6etYMUhL4RTki37niav99C6OHwMDB2iBT5S5piyHO+ltK2YX8Hjy9TXxhE1Gm/TmAV0uaykSpnHKFIAif/A=="
+	crossorigin="anonymous"
+	referrerpolicy="no-referrer"
+></script>
+
+<canvas
+	id="age_chart"
+	style="width: 100%; max-width: 600px; margin: 0 auto"
+	height="300"
+></canvas>
+<hr class="my-3" />
+<div class="container my-5">
+	<div class="row">
+		<div class="col-md">
+			<canvas
+				id="program_enrolled_chart"
+				style="width: 100%; max-width: 200px; margin: 0 auto"
+				height="300"
+			></canvas>
+		</div>
+		<div class="col-md">
+			<canvas
+				id="year_level_chart"
+				style="width: 100%; max-width: 200px; margin: 0 auto"
+				height="300"
+			></canvas>
+		</div>
+		<!-- <div class="col-md">One of three columns</div> -->
+	</div>
+</div>
+<canvas
+	id="genders_chart"
+	style="width: 100%; max-width: 200px; margin: 0 auto"
+	height="300"
+></canvas>
+
+<script>
+	const default_value = {
+		labels: [],
+		data: [],
+		responses: 0
+	};
+	let program_enrolled = default_value;
+	let ages = default_value;
+	let year_level = default_value;
+	let genders = default_value;
+	let educations = default_value;
+
+	const program_enrolled_ctx = document
+		.getElementById('program_enrolled_chart')
+		.getContext('2d');
+	const age_ctx = document.getElementById('age_chart').getContext('2d');
+	const year_level_ctx = document
+		.getElementById('year_level_chart')
+		.getContext('2d');
+	const genders_ctx = document.getElementById('genders_chart').getContext('2d');
+
+	const data = {
+		labels: [],
+		datasets: [
+			{
+				label: ''
+			}
+		]
+	};
+
+	const program_enrolled_chart = new Chart(program_enrolled_ctx, {
+		type: 'pie',
+		data: { ...data },
+		options: {
+			responsive: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Program Enrolled'
+				}
+			}
+		},
+		plugins: [ChartDataLabels]
+	});
+
+	const year_level_chart = new Chart(year_level_ctx, {
+		type: 'pie',
+		data: { ...data },
+		options: {
+			responsive: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Year Level'
+				}
+			}
+		},
+		plugins: [ChartDataLabels]
+	});
+
+	const genders_chart = new Chart(genders_ctx, {
+		type: 'pie',
+		data: { ...data },
+		options: {
+			responsive: false,
+			plugins: {
+				title: {
+					display: true,
+					text: 'Genders'
+				}
+			}
+		},
+		plugins: [ChartDataLabels]
+	});
+
+	const barOptions = {
+		id: 'barOptions',
+		afterDatasetsDraw(chart, args, pluginOptions) {
+			const meta = chart.getDatasetMeta(0);
+			meta.data.forEach(function (bar, index) {
+				age_ctx.textAlign = 'center';
+				age_ctx.fillText(
+					((ages.data[index] / ages.responses) * 100).toFixed(1) + '%',
+					bar.x,
+					bar.y - 5
+				);
+			});
+		}
+	};
+	const age_chart = new Chart(age_ctx, {
+		type: 'bar',
+		data: { ...data },
+		options: {
+			responsive: false,
+			plugins: {
+				legend: {
+					display: false
+				},
+				title: {
+					display: true,
+					text: 'Age'
+				},
+				tooltip: {
+					callbacks: {
+						title: function (context) {
+							return parseInt(context[0].label) + ' years old';
+						}
+					}
+				}
+			},
+			scales: {
+				y: {
+					beginAtZero: true
+				}
+			}
+		},
+		plugins: [barOptions]
+	});
+
+	// Fetch data
+	axios({
+		method: 'POST',
+		url: '/dashboard'
+	}).then(({ data }) => {
+		program_enrolled = data.program_enrolled;
+		ages = data.ages;
+		year_level = data.year_level;
+		genders = data.genders;
+		educations = data.educations;
+
+		// Program Enrolled
+		program_enrolled_chart.data.labels = program_enrolled.labels;
+		program_enrolled_chart.data.datasets = [
+			{
+				label: '',
+				data: program_enrolled.data
+			}
+		];
+
+		program_enrolled_chart.update();
+
+		// Age
+		age_chart.data.labels = ages.labels;
+		age_chart.data.datasets = [
+			{
+				label: '',
+				data: ages.data.sort((a, b) => b - a),
+				backgroundColor: '#109519'
+			}
+		];
+		age_chart.update();
+
+		// Year Level
+		year_level_chart.data.labels = year_level.labels;
+		year_level_chart.data.datasets = [
+			{
+				label: '',
+				data: year_level.data
+			}
+		];
+		year_level_chart.update();
+
+		// Gender
+		genders_chart.data.labels = genders.labels;
+		genders_chart.data.datasets = [
+			{
+				label: '',
+				data: genders.data
+			}
+		];
+		genders_chart.update();
+	});
+</script>
+{% endblock %}
