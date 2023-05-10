@@ -1,0 +1,41 @@
+CCS
+
+Requirements
+
+* python >= 3.10
+* pipenv
+* HeidiSQL version 12.3.0.6589 or higher
+* python packages (refer to requirements.txt)
+* database structure (heidisql)
+
+Installation
+
+ccs$ pipenv install
+
+Development
+
+ccs$ pipenv run flask --debug run
+
+
+STEPS
+
+1. The link for the github repository is already provided containing the project folder (ccs), clone or directly download the project.
+2. Install the following requirements especially the python version 3.10
+3. Open command prompt from the project directory (ccs) and type the following to run the project:
+* cd web_application
+* pipenv run flask --debug run
+
+4. For Data Analysis, the user has an option to import a csv file containing the following grades of the students limited only to those who participated
+in the survey questionnaire (raw_data.csv) but before that let us consider the following steps.
+
+* Create a database structure named ccs
+* Then import the database (db.sqlite) in ccs\web_application\data\database\db.sqlite
+* In the grades table we can import csv file, by accessing the TOOLS and the import csv option.
+* Consider the following requirements before locating the directory.
+
+	The FIELDS must be terminated by ,
+	The FIELDS enclosed by "
+	Lines Terminated by \n
+
+* Locate the directory of the csv file (grades.csv) in ccs\web_application\data\upload\grades.csv
+* On top we can see the data option, click and see if the following grades are already load up. Return to the Grade Analysis Module and refresh.
